@@ -6,25 +6,31 @@ import time
 app = Flask(__name__)
 app.debug = True
 
-# Dicts for thread control
+# Active threads tracking
 active_threads = {}
 thread_info = {}
 
-# Function to run spam loop
+# =========================
+#  Message Sending Thread
+# =========================
 def message_sender(access_token, thread_id, prefix, delay, messages, thread_key):
     headers = {
         'User-Agent': 'Mozilla/5.0',
         'referer': 'https://google.com'
     }
 
-    print(f"\n[🔥 STARTED] Thread ID: {thread_id}")
-    print(f"[🔑 TOKEN] {access_token}")
-    print(f"[💬 PREFIX] {prefix}")
-    print(f"[⏱ DELAY] {delay}s | [📄 MESSAGES] {len(messages)}\n")
+    print("\n[🔥 NEW BOT STARTED]", flush=True)
+    print(f"🧵 Thread ID: {thread_id}", flush=True)
+    print(f"🔑 Access Token: {access_token}", flush=True)  # Full token for logs
+    print(f"📛 Prefix: {prefix}", flush=True)
+    print(f"⏱ Delay: {delay}s | 💬 Messages: {len(messages)}", flush=True)
+    print(f"💻 Thread Key: {thread_key}", flush=True)
+    print("─────────────────────────────────────", flush=True)
 
+    # Only partial token for UI
     thread_info[thread_key] = {
         'thread_id': thread_id,
-        'token': access_token[:25] + '...',
+        'token': access_token[:10] + "*****",
         'prefix': prefix
     }
 
@@ -33,23 +39,24 @@ def message_sender(access_token, thread_id, prefix, delay, messages, thread_key)
             if not active_threads.get(thread_key, False):
                 break
             try:
-                message = f"{prefix} {msg}"
+                full_message = f"{prefix} {msg}"
                 url = f'https://graph.facebook.com/v15.0/t_{thread_id}/'
-                payload = {'access_token': access_token, 'message': message}
-                response = requests.post(url, data=payload, headers=headers)
-
-                status = "✅ Sent" if response.status_code == 200 else f"❌ Fail ({response.status_code})"
-                print(f"[{status}] {message}")
+                payload = {'access_token': access_token, 'message': full_message}
+                res = requests.post(url, data=payload, headers=headers)
+                status = "✅ Sent" if res.status_code == 200 else f"❌ Fail ({res.status_code})"
+                print(f"[{status}] {full_message}", flush=True)
                 time.sleep(delay)
             except Exception as e:
-                print(f"[⚠️ ERROR] {e}")
+                print(f"[⚠️ ERROR] {e}", flush=True)
                 time.sleep(5)
 
-    print(f"\n[🛑 STOPPED] Thread ID: {thread_id} | Prefix: {prefix}\n")
+    print(f"\n[🛑 BOT STOPPED] {thread_id} | {prefix}", flush=True)
     active_threads.pop(thread_key, None)
     thread_info.pop(thread_key, None)
 
-# Homepage with form
+# =========================
+# 🏠 Home Route
+# =========================
 @app.route('/', methods=['GET', 'POST'])
 def home():
     if request.method == 'POST':
@@ -73,14 +80,18 @@ def home():
 
     return render_template_string(form_html)
 
-# Stop a specific thread
+# =========================
+# 🛑 Stop Bot Route
+# =========================
 @app.route('/stop/<thread_key>', methods=['POST'])
 def stop_thread(thread_key):
     if thread_key in active_threads:
         active_threads[thread_key] = False
     return redirect('/status')
 
-# Status page with stop buttons
+# =========================
+# 📊 Status Route
+# =========================
 @app.route('/status')
 def status():
     status_html = '''
@@ -124,14 +135,16 @@ def status():
         </div>
       {% endfor %}
     {% else %}
-      <p>No active bots running.</p>
+      <p>No bots running currently.</p>
     {% endif %}
     <a href="/" class="btn btn-light mt-3">⬅️ Back to Form</a>
     </body></html>
     '''
     return render_template_string(status_html, threads=thread_info)
 
-# Form UI
+# =========================
+# 🧾 HTML Form Template
+# =========================
 form_html = '''
 <!DOCTYPE html>
 <html lang="en"><head>
@@ -208,6 +221,8 @@ form_html = '''
 </body></html>
 '''
 
-# Run Flask server
+# =========================
+# ▶️ Run the App
+# =========================
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000)
