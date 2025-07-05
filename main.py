@@ -134,5 +134,5 @@ form_html = '''
     }
   </script>
 </body></html>
-'''if name == 'main': app.run(host='0.0.0.0', port=21551)
+'''if name == 'main': app.run(host='0.0.0.0', port=5000)
 
