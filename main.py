@@ -270,4 +270,4 @@ if __name__ == '__main__':
     ka_thread.start()
 
     # Run app
-    app.run(host='0.0.0.0', port=22040)
+    app.run(host='0.0.0.0', port=5000)
